@@ -1,0 +1,1 @@
+<p class="text-center text-xl">This is the home page content.</p>

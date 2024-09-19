@@ -1,0 +1,130 @@
+<script>
+  import axios from 'axios';
+  import { onMount } from 'svelte';
+
+  let products = [];
+  let newProductName = '';
+  let newProductPrice = '';
+  let updatedProductName = '';
+  let updatedProductPrice = '';
+  let updateProductId = null;
+
+  onMount(async () => {
+    await fetchProducts();
+  });
+
+  async function fetchProducts() {
+    try {
+      const res = await axios.get('http://localhost:3000/api/products');
+      products = res.data;
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  }
+
+  async function addProduct() {
+    try {
+      const res = await axios.post('http://localhost:3000/api/products', { name: newProductName, price: newProductPrice });
+      products = [...products, res.data];
+      newProductName = '';
+      newProductPrice = '';
+    } catch (error) {
+      console.error('Error adding product:', error);
+    }
+  }
+
+  async function updateProduct() {
+    try {
+      const res = await axios.put(`http://localhost:3000/api/products/${updateProductId}`, { name: updatedProductName, price: updatedProductPrice });
+      const index = products.findIndex(product => product.id === updateProductId);
+      products[index] = res.data;
+      updatedProductName = '';
+      updatedProductPrice = '';
+      updateProductId = null;
+    } catch (error) {
+      console.error('Error updating product:', error);
+    }
+  }
+
+  async function deleteProduct(id) {
+    try {
+      await axios.delete(`http://localhost:3000/api/products/${id}`);
+      products = products.filter(product => product.id !== id);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
+  }
+
+  function prepareUpdate(product) {
+    updatedProductName = product.name;
+    updatedProductPrice = product.price;
+    updateProductId = product.id;
+  }
+</script>
+
+<h1 class="text-2xl font-bold mb-4">Products</h1>
+
+{#if products.length > 0}
+  <ul class="list-disc list-inside mb-4">
+    {#each products as product}
+      <li class="mb-2">
+        {product.name} - ${product.price}
+        <button 
+          class="ml-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+          on:click={() => prepareUpdate(product)}
+        >
+          Update
+        </button>
+        <button 
+          class="ml-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+          on:click={() => deleteProduct(product.id)}
+        >
+          Delete
+        </button>
+      </li>
+    {/each}
+  </ul>
+{:else}
+  <p>Loading products...</p>
+{/if}
+
+<div class="mb-4">
+  <input 
+    class="border p-2 rounded w-full mb-2" 
+    bind:value={newProductName} 
+    placeholder="New product name" 
+  />
+  <input 
+    class="border p-2 rounded w-full mb-2" 
+    bind:value={newProductPrice} 
+    placeholder="New product price" 
+  />
+  <button 
+    class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+    on:click={addProduct}
+  >
+    Add Product
+  </button>
+</div>
+
+{#if updateProductId !== null}
+  <div class="mb-4">
+    <h2 class="text-xl font-semibold mb-2">Update Product</h2>
+    <input 
+      class="border p-2 rounded w-full mb-2" 
+      bind:value={updatedProductName} 
+      placeholder="Updated product name" 
+    />
+    <input 
+      class="border p-2 rounded w-full mb-2" 
+      bind:value={updatedProductPrice} 
+      placeholder="Updated product price" 
+    />
+    <button 
+      class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+      on:click={updateProduct}
+    >
+      Update Product
+    </button>
+  </div>
+{/if}

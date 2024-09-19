@@ -1,0 +1,122 @@
+<script>
+    import axios from 'axios';
+    import { onMount } from 'svelte';
+  
+    let categories = [];
+    let newCategoryName = '';
+    let updatedCategoryName = '';
+    let updateCategoryId = null;
+  
+    onMount(async () => {
+      await fetchCategories();
+    });
+  
+    async function fetchCategories() {
+      try {
+        const res = await axios.get('http://10.0.0.85/api/categorys');
+        categories = res.data;
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    }
+  
+    async function addCategory() {
+      try {
+        const res = await axios.post('http://10.0.0.85/api/categorys', { title: newCategoryName });
+        categories = [...categories, res.data];
+        newCategoryName = '';
+        
+        // Fetch categories again to update the list
+        await fetchCategories();
+      } catch (error) {
+        console.error('Error adding category:', error);
+      }
+    }
+  
+    async function updateCategory() {
+      try {
+        const res = await axios.put(`http://10.0.0.85/api/categorys/${updateCategoryId}`, { title: updatedCategoryName });
+        const index = categories.findIndex(category => category.id === updateCategoryId);
+        categories[index] = res.data;
+        updatedCategoryName = '';
+        updateCategoryId = null;
+        
+        // Fetch categories again to update the list
+        await fetchCategories();
+      } catch (error) {
+        console.error('Error updating category:', error);
+      }
+    }
+  
+    async function deleteCategory(id) {
+      try {
+        await axios.delete(`http://10.0.0.85/api/categorys/${id}`);
+        categories = categories.filter(category => category.id !== id);
+      } catch (error) {
+        console.error('Error deleting category:', error);
+      }
+    }
+  
+    function prepareUpdate(category) {
+      updatedCategoryName = category.title;
+      updateCategoryId = category.id;
+    }
+  </script>
+  
+  <h1 class="text-2xl font-bold mb-4">Categories</h1>
+  
+  {#if categories.length > 0}
+    <ul class="list-disc list-inside mb-4">
+      {#each categories as category}
+        <li class="mb-2">
+          {category.title}
+          <button 
+            class="ml-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+            on:click={() => prepareUpdate(category)}
+          >
+            Update
+          </button>
+          <button 
+            class="ml-2 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+            on:click={() => deleteCategory(category.id)}
+          >
+            Delete
+          </button>
+        </li>
+      {/each}
+    </ul>
+  {:else}
+    <p>Loading categories...</p>
+  {/if}
+  
+  <div class="mb-4">
+    <input 
+      class="border p-2 rounded w-full mb-2" 
+      bind:value={newCategoryName} 
+      placeholder="New category name" 
+    />
+    <button 
+      class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+      on:click={addCategory}
+    >
+      Add Category
+    </button>
+  </div>
+  
+  {#if updateCategoryId !== null}
+    <div class="mb-4">
+      <h2 class="text-xl font-semibold mb-2">Update Category</h2>
+      <input 
+        class="border p-2 rounded w-full mb-2" 
+        bind:value={updatedCategoryName} 
+        placeholder="Updated category name" 
+      />
+      <button 
+        class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+        on:click={updateCategory}
+      >
+        Update Category
+      </button>
+    </div>
+  {/if}
+  
